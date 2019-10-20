@@ -70,7 +70,7 @@ class wwe_network:
 
         #https://dve-api.imggaming.com/v/70800?customerId=16&auth=1f7512c7c2b7474abf723188038b32c1&timestamp=1564126721496
         stream = self._session.get(stream_link, headers=REALM_HEADERS).json()
-        #print(stream['hlsUrl'])
+
         return stream['hls']['url']
 
 
@@ -86,51 +86,82 @@ class wwe_network:
         api_link = self._session.get('https://cdn.watch.wwe.com/api/page?path={}'.format(link)).json()
 
         entry = api_link['entries'][0]['item']
-        #print(entry['firstBroadcastDate'])
+
         # If our event is a weekly/episodic show, add the date, season and episode number to the file name
-        try:
-            if(entry['customFields']['EventStyle'] == "Episodic"):
-                if(entry['episodeNumber'] < 10):
-                    ep_num = "0" + str(entry['episodeNumber'])
-                else:
-                    ep_num = entry['episodeNumber']
-
-                file_date = arrow.get(entry['firstBroadcastDate'],'YYYY-MM-DDTHH:mm:ssZ')
-                file_date = file_date.format('M-DD-YYYY')
-
-                file_name = '{} {} - S{}E{} - {}'.format(entry['customFields']['Franchise'],
-                                                    entry['episodeName'],
-                                                    entry['releaseYear'],
-                                                    ep_num,
-                                                    file_date)
+        if entry["customFields"].get("EventStyle") == "Episodic":
+            if entry["episodeNumber"] < 10:
+                ep_num = "0" + str(entry["episodeNumber"])
             else:
-                # Since we have a PPV get the title and year into variables
-                ppv_title = entry['episodeName']
-                ppv_year  = entry['releaseYear']
-                # Check if the PPV already has the year in it. For example "This Tuesday in Texas 1991" has the year,
-                # but "WrestleMania 35" doesn't. Since we don't want to have "This Tuesday in Texas 1991 1991" as
-                # our filename we will just use the PPV title
-                if(str(ppv_year) in ppv_title):
-                    file_name = '{} {}'.format(entry['customFields']['Franchise'],
-                                                     entry['episodeName'])
-                else:
-                    file_name = '{} {} {}'.format(entry['customFields']['Franchise'],
-                                                     entry['episodeName'],
-                                                     entry['releaseYear'])
-        except:
-            # Since we have a PPV get the title and year into variables
-            ppv_title = entry['episodeName']
-            ppv_year  = entry['releaseYear']
+                ep_num = entry["episodeNumber"]
+
+            file_date = arrow.get(
+                    entry["firstBroadcastDate"], "YYYY-MM-DDTHH:mm:ssZ"
+            )
+            file_date = file_date.format("MM-DD-YYYY")
+
+            file_name = "{} {} - S{}E{} - {}".format(
+                entry["customFields"]["Franchise"],
+                entry["episodeName"]
+                .replace("&", "and")
+                .replace(":", "- ")
+                .replace("'", "")
+                .replace("\"", "")
+                .replace("/", " "),
+                entry["releaseYear"],
+                ep_num,
+                file_date,
+            )
+        elif entry["customFields"].get("SeasonNumber"):
+            if entry["episodeNumber"] < 10:
+                ep_num = "0" + str(entry["episodeNumber"])
+            else:
+                ep_num = entry["episodeNumber"]
+
+            file_date = arrow.get(
+                    entry["firstBroadcastDate"], "YYYY-MM-DDTHH:mm:ssZ"
+            )
+            file_date = file_date.format("MM-DD-YYYY")
+
+            file_name = "{} - S{}E{} - {}".format(
+                entry["customFields"]["SeriesName"],
+                entry["customFields"].get("SeasonNumber"),
+                ep_num,
+                entry["episodeName"]
+                .replace("&", "and")
+                .replace(":", "- ")
+                .replace("'", "")
+                .replace("\"", "")
+                .replace("/", " "),
+            )
+
+        elif entry["customFields"].get("EventStyle") == "PPV":
+            # If it is a PPV get the title and year into variables
+            ppv_title = entry["episodeName"]
+            ppv_year = entry["releaseYear"]
             # Check if the PPV already has the year in it. For example "This Tuesday in Texas 1991" has the year,
             # but "WrestleMania 35" doesn't. Since we don't want to have "This Tuesday in Texas 1991 1991" as
             # our filename we will just use the PPV title
-            if(str(ppv_year) in ppv_title):
-                file_name = '{} {}'.format(entry['customFields']['Franchise'],
-                                                 entry['episodeName'])
+            if str(ppv_year) in ppv_title:
+                file_name = "{} {}".format(
+                    entry["customFields"]["Franchise"], entry["episodeName"]
+                )
             else:
-                file_name = '{} {} {}'.format(entry['customFields']['Franchise'],
-                                                 entry['episodeName'],
-                                                 entry['releaseYear'])
+                file_name = "{} {} {}".format(
+                    entry["customFields"]["Franchise"],
+                    entry["episodeName"],
+                    entry["releaseYear"],
+                )
+        else:
+            if not entry.get('title'):
+                raise Exception("Unrecognized event type")
+            file_name = (
+                entry["title"]
+                .replace("&", "and")
+                .replace(":", "- ")
+                .replace("'", "")
+                .replace("\"", "")
+                .replace("/", " ")
+            )
 
         return self._video_url(api_link['entries'][0]['item']['customFields']['DiceVideoId']), file_name
 

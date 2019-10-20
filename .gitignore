@@ -2,3 +2,6 @@
 *.pyc
 __pycache__/*
 out/*
+*.aac
+*.ts
+*.mp4
