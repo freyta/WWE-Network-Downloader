@@ -1,6 +1,6 @@
 WWE Network 2.0 Downloader (Improved)
 
-Freyta's WWE Network Downloader, please don't share. This was coded by me from scratch, ideas were taken from youtube-dl.
+Freyta's WWE Network Downloader, **please don't share**. This was coded by me from scratch, ideas were taken from youtube-dl.
 
 Features include the following:
 - Downloading from set start times
