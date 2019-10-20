@@ -1,0 +1,7 @@
+TODO:
+
+Part downloaded files -> save progress in a json file with current downloaded segment.
+
+Check that a segment is fully downloaded before apending to video/audio file
+
+Add CLI option to specify start/stop time (in seconds)

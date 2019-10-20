@@ -4,6 +4,10 @@ import subprocess
 import m3u8
 import argparse
 import kodi_nfo
+import download_util
+
+
+
 
 def make_safe_filename(s):
     def safe_char(c):
@@ -58,6 +62,75 @@ stream_url = account.m3u8_stream(video_link[0])
 title = video_link[1]
 
 print("Got the video information")
+print('ffmpeg -i out/"{}".ts -i out/{}.aac -c copy out/"{}".mp4'.format(title, title, title))
+
+
+
+# BELOW IS THE NEW CODE
+START_FROM = 122
+
+import m3u8
+import random
+# Get the base url of our video
+base_url = stream_url.split(".m3u8")[0].rsplit("/", 1)
+
+# Initialise the downloader
+download = download_util.download()
+index_m3u8 = download.get_index_m3u8(stream_url)
+
+index_m3u8_obj = m3u8.loads(index_m3u8.data.decode('utf-8'))
+
+# Get our audio playlist
+audio_qualities = []
+for i in index_m3u8_obj.media:
+
+    if "eng" in i.language:
+        audio_qualities.append((int(i.group_id.split('audio-')[1]), base_url[0]+"/"+ i.uri))
+# Sort the audio quality from high to low
+audio_qualities.sort(reverse=True)
+# Choose the playlist we want
+audio_playlist = download.get_playlist_object(audio_qualities[0][1])
+
+download.download_playlist(audio_playlist, audio_qualities[0][1].split("index.m3u8")[0], title, start_from=START_FROM)
+
+#Get our playlist. We want 1080p
+video_selections = []
+
+for i in index_m3u8_obj.playlists:
+    '''
+    1080p high = 10000
+    1080p low  = 6500
+    720p high  = 4500
+    720p high  = 2100
+    504p high  = 1500
+    360p high  = 1000
+    288p high  = 600
+    '''
+    if(i.stream_info.average_bandwidth <= 10000 * 1000):
+        #video_m3u8 = base_url[0] + i.uri
+        # Create a list of potential URIs
+        video_selections.append((i.stream_info.bandwidth, base_url[0] + "/" + i.uri))
+
+# Select the first one
+video_selections.sort(reverse=True)
+
+video_playlist = download.get_playlist_object(video_selections[0][1])
+
+# Download the playlist
+download.download_playlist(video_playlist, video_selections[0][1].split("index.m3u8")[0], title, start_from=START_FROM)
+
+
+
+subprocess.call('ffmpeg -i out/"{}".ts -i out/"{}".aac -c copy out/"{}".mp4'.format(title, title, title), shell=True)
+
+exit()
+
+
+
+
+
+
+# ABOVE IS THE END OF NEW CODE
 
 # Download the video
 zz = account.get_m3u8(stream_url, make_safe_filename(title),1100)
