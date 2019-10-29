@@ -2,21 +2,21 @@ import urllib3, certifi
 import m3u8, json
 import datetime
 import sys, subprocess, os
-
-HEADERS = {'user-agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:69.0) Gecko/20100101 Firefox/69.0'}
-OUTPUT_FOLDER = "out"
+import CONSTANTS
 
 class download:
 
     def __init__(self):
-        self.http = urllib3.PoolManager(headers=HEADERS,
+        self.http = urllib3.PoolManager(headers=CONSTANTS.DOWNLOAD_HEADERS,
                                    cert_reqs='CERT_REQUIRED',
                                    ca_certs=certifi.where())
 
-    def create_download_dir(self):
+    def create_dirs(self):
         # If the download directory doesn't exist, we need to create it
-        if not os.path.isdir("./{}".format(OUTPUT_FOLDER)):
-            os.mkdir("./{}".format(OUTPUT_FOLDER))
+        if not os.path.isdir("./{}".format(CONSTANTS.OUTPUT_FOLDER)):
+            os.mkdir("./{}".format(CONSTANTS.OUTPUT_FOLDER))
+        if not os.path.isdir("./{}".format(CONSTANTS.TEMP_FOLDER)):
+            os.mkdir("./{}".format(CONSTANTS.TEMP_FOLDER))
 
     def get_index_m3u8(self, link):
         # Return the contents of the m3u8 playlist
@@ -38,17 +38,35 @@ class download:
         f = open(name+".part","w")
         json.dump({"current_time":part}, f)
 
+    def read_part_file(self, filename):
+        # Read which file we need to continue downloading from
+        json_file = open(filename, "r")
+        part = json.load(json_file)
+        return float(part.get("current_time"))
+
     def combine_videos(self, title):
-        file = OUTPUT_FOLDER + "/" + title
-        subprocess.call('ffmpeg -i "{}".ts -i "{}".aac -c copy "{}".mp4'.format(file, file, file), shell=True)
+        input_file = CONSTANTS.TEMP_FOLDER + "/" + title
+        output_file = CONSTANTS.OUTPUT_FOLDER + "/" + title
+        metafile = CONSTANTS.TEMP_FOLDER + "/" + title + "-metafile"
+        ffmpeg_command = ('ffmpeg \
+            -i "{}.ts"\
+            -i "{}.aac"\
+            -i "{}" -map_metadata 1\
+            -c copy\
+            "{}".mp4'.format(input_file, input_file, metafile, output_file))
+        print(ffmpeg_command)
+        
+        #subprocess.call('ffmpeg -i "{}".ts -i "{}".aac -c copy "{}".mp4'.format(file, file, file), shell=True)
+        subprocess.call(ffmpeg_command, shell=True)
+        #subprocess.Popen(ffmpeg_command, shell=True, stdout=subprocess.PIPE)
 
     def download_playlist(self, playlist, base_url, title, **kwargs):
         # Check if the download directory exists
-        self.create_download_dir()
+        self.create_dirs()
         # Get the amount of files in the playlist
         files_to_download = len(playlist.segments)
         # set the title to our title and output file
-        title = OUTPUT_FOLDER + "/" + title
+        title = os.getcwd() + "/" + CONSTANTS.TEMP_FOLDER + "/" + title
 
         # Get the format of the file we are downloading.
         # Result should either be aac or ts
@@ -64,6 +82,15 @@ class download:
         # Find the total length of a playlist
         for length in playlist.segments:
             total_length += length.duration
+
+        try:
+            # If we have already started to download a file and it still exists,
+            # we will have a temp file called ".part". We will open it to see
+            # where we will continue downloading from
+            if os.path.exists("{}.{}".format(title, format)):
+               start_from = self.read_part_file("{}.{}.part".format(title, format))
+        except:
+            pass
 
         # Sometimes the inputted end time is too long or if we want to download the whole video,
         # we just set the end_time to when the video itself ends.
@@ -83,15 +110,15 @@ class download:
                     # Get the base link for the audio files and then open the URL
                     download_data = self.http.request('GET', base_url+i.uri)
                     # Now we append the data to the download file and clear the programs buffer
-                    self.write_data(download_data.data, "/mnt/DATA/Python/wwe_network_2/{}.{}".format(title, format))
-                    # Save where we are upto in the download process
-                    self.write_upto(current_file, "/mnt/DATA/Python/wwe_network_2/{}.{}".format(title, format))
+                    self.write_data(download_data.data, "{}.{}".format(title, format))
                     # Clear the stdout internal buffer
                     sys.stdout.flush()
                 # After adding the downloaded data, we increment the duration
                 current_time += i.duration
+                # Save where we are upto in the download process
+                self.write_upto(current_time, "{}.{}".format(title, format))
             # Since we downloaded the whole file we will delete out part
-            os.remove(title+"."+format+".part")
+            #os.remove(title+"."+format+".part")
         except KeyboardInterrupt:
             # We want to cancel the current operation
             pass
