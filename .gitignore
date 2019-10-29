@@ -5,3 +5,5 @@ out/*
 *.aac
 *.ts
 *.mp4
+*.m3u8
+temp/*

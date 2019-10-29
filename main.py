@@ -3,14 +3,16 @@ import json
 import subprocess
 import m3u8
 import argparse
-import download_util, kodi_nfo
+import download_util, kodi_nfo, CONSTANTS
 
-email = 'test@gmail.com'
-password = 'password'
+email = ''
+password = ''
 
 # GET ARGS FOR EPISODE TO DOWNLOAD
-parser = argparse.ArgumentParser(description='Download videos off the WWE Network')
+parser = argparse.ArgumentParser(description='Download videos off the WWE Network.')
 parser.add_argument('-t','--title', help='Link of the video you want to download. Example: /episode/Prime-Time-Wrestling-9283', required=True)
+parser.add_argument('-q','--quality', help='Quality of the video you wish to download. Value between 1 (highest) and 6 (lowest). Defaults to 1080p.', required=False)
+parser.add_argument('-c','--chapter', help='Add chapter "milestones" to the video.', required=False, action='store_true')
 parser.add_argument('-e','--episode_nfo', help='Create a Kodi format NFO TV episode file.', required=False, action='store_true')
 parser.add_argument('-s','--series_nfo', help='Create a Kodi format NFO TV show file.', required=False, action='store_true')
 parser.add_argument('-st','--start_time', help='How far into the video you want to start, in seconds. Note: Will overide other start points.', required=False)
@@ -20,10 +22,14 @@ args = vars(parser.parse_args())
 
 create_episode_nfo = False
 create_series_nfo = False
+# Set the default video quality to 1080p
+QUALITY = CONSTANTS.VIDEO_QUALITY[0]
 
 # Get the episode title
 if args['title']:
     EPISODE = args['title']
+    if "https://watch.wwe.com" in EPISODE:
+        EPISODE = EPISODE.replace("https://watch.wwe.com", "")
 
 # If the title wasn't set
 if not EPISODE:
@@ -51,6 +57,14 @@ if args['start_time']:
     START_FROM = args['start_from']
 if args['end_time']:
     END_TIME = args['end_time']
+print(START_FROM)
+# Set the quality of the video we want
+if args['quality']:
+    if int(args['quality']) < 0 or int(args['quality']) >= len(CONSTANTS.VIDEO_QUALITY):
+        print("Invalid quality choice. It must be between 0 (1080p) and {} (288p)".format(len(CONSTANTS.VIDEO_QUALITY)))
+        exit()
+
+    QUALITY = CONSTANTS.VIDEO_QUALITY[int(args['quality'])]
 
 # Login
 account = wwe.wwe_network(email,password)
@@ -115,17 +129,8 @@ download.download_playlist(**kwargs)
 video_selections = []
 
 for i in index_m3u8_obj.playlists:
-    '''
-    Values we can use:
-    1080p high = 10000
-    1080p low  = 6500
-    720p high  = 4500
-    720p high  = 2100
-    504p high  = 1500
-    360p high  = 1000
-    288p high  = 600
-    '''
-    if (i.stream_info.average_bandwidth <= 10000 * 1000):
+   
+    if (i.stream_info.average_bandwidth <= QUALITY * 1000):
         # Create a list of potential URIs
         video_selections.append((i.stream_info.bandwidth, base_url[0] + "/" + i.uri))
 
@@ -140,6 +145,9 @@ kwargs.update({"base_url":video_selections[0][1].split("index.m3u8")[0]})
 
 # Download the playlist
 download.download_playlist(**kwargs)
+
+# Download the chapter information\
+account.get_chapter_information(EPISODE, video_link[1], args['chapter'])
 
 # Finally we want to combine our audio and video files
 download.combine_videos(title)
