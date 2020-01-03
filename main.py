@@ -1,14 +1,11 @@
 import wwe
 import json
 import subprocess
-import m3u8
+import m3u8, os
 import argparse
 import download_util, kodi_nfo, CONSTANTS
 
-email = ''
-password = ''
-
-# GET ARGS FOR EPISODE TO DOWNLOAD
+# GET ARGS FOR EPISODE TO DOWNLOAonD
 parser = argparse.ArgumentParser(description='Download videos off the WWE Network.')
 parser.add_argument('-t','--title', help='Link of the video you want to download. Example: /episode/Prime-Time-Wrestling-9283', required=True)
 parser.add_argument('-q','--quality', help='Quality of the video you wish to download. Value between 1 (highest) and 6 (lowest). Defaults to 1080p.', required=False)
@@ -17,6 +14,7 @@ parser.add_argument('-e','--episode_nfo', help='Create a Kodi format NFO TV epis
 parser.add_argument('-s','--series_nfo', help='Create a Kodi format NFO TV show file.', required=False, action='store_true')
 parser.add_argument('-st','--start_time', help='How far into the video you want to start, in seconds. Note: Will overide other start points.', required=False)
 parser.add_argument('-et','--end_time', help='How far into the video you want to stop, in seconds.', required=False)
+parser.add_argument('-of','--output_filename', help='Custom output file name.', required=False)
 
 args = vars(parser.parse_args())
 
@@ -54,10 +52,15 @@ if args['series_nfo']:
 
 # Set the start and end times
 if args['start_time']:
-    START_FROM = args['start_from']
+    START_FROM = args['start_time']
 if args['end_time']:
     END_TIME = args['end_time']
-print(START_FROM)
+
+# Set the custom output title
+CUSTOM_FILENAME = ""
+if args['output_filename']:
+    CUSTOM_FILENAME = args['output_filename']
+
 # Set the quality of the video we want
 if args['quality']:
     if int(args['quality']) < 0 or int(args['quality']) >= len(CONSTANTS.VIDEO_QUALITY):
@@ -67,7 +70,7 @@ if args['quality']:
     QUALITY = CONSTANTS.VIDEO_QUALITY[int(args['quality'])]
 
 # Login
-account = wwe.wwe_network(email,password)
+account = wwe.wwe_network(CONSTANTS.USERNAME,CONSTANTS.PASSWORD)
 account.login()
 
 print("Logged in")
@@ -77,7 +80,10 @@ video_link = account.get_video_info(EPISODE)
 
 # Grab the m3u8
 stream_url = account.m3u8_stream(video_link[0])
-title = video_link[1]
+if not CUSTOM_FILENAME:
+    title = video_link[1]
+else:
+    title = CUSTOM_FILENAME
 
 print("Got the video information")
 
@@ -129,7 +135,7 @@ download.download_playlist(**kwargs)
 video_selections = []
 
 for i in index_m3u8_obj.playlists:
-   
+
     if (i.stream_info.average_bandwidth <= QUALITY * 1000):
         # Create a list of potential URIs
         video_selections.append((i.stream_info.bandwidth, base_url[0] + "/" + i.uri))
@@ -147,7 +153,7 @@ kwargs.update({"base_url":video_selections[0][1].split("index.m3u8")[0]})
 download.download_playlist(**kwargs)
 
 # Download the chapter information\
-account.get_chapter_information(EPISODE, video_link[1], args['chapter'])
+account.get_chapter_information(EPISODE, title, args['chapter'])
 
 # Finally we want to combine our audio and video files
 download.combine_videos(title)

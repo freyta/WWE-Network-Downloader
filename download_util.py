@@ -54,12 +54,15 @@ class download:
             -i "{}" -map_metadata 1\
             -c copy\
             "{}".mp4'.format(input_file, input_file, metafile, output_file))
-        print(ffmpeg_command)
-        
-        #subprocess.call('ffmpeg -i "{}".ts -i "{}".aac -c copy "{}".mp4'.format(file, file, file), shell=True)
-        subprocess.call(ffmpeg_command, shell=True)
-        #subprocess.Popen(ffmpeg_command, shell=True, stdout=subprocess.PIPE)
 
+        subprocess.call(ffmpeg_command, shell=True)
+
+        os.remove(os.getcwd() + "/" + CONSTANTS.TEMP_FOLDER + "/" + title +".aac")
+        os.remove(os.getcwd() + "/" + CONSTANTS.TEMP_FOLDER + "/" + title +".aac.part")
+        os.remove(os.getcwd() + "/" + CONSTANTS.TEMP_FOLDER + "/" + title +".ts")
+        os.remove(os.getcwd() + "/" + CONSTANTS.TEMP_FOLDER + "/" + title +".ts.part")
+        os.remove(os.getcwd() + "/" + CONSTANTS.TEMP_FOLDER + "/" + title + "-metafile")
+        
     def download_playlist(self, playlist, base_url, title, **kwargs):
         # Check if the download directory exists
         self.create_dirs()
