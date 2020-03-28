@@ -44,25 +44,25 @@ class download:
         part = json.load(json_file)
         return float(part.get("current_time"))
 
-    def combine_videos(self, title):
+    def combine_videos(self, title, file_folder, keep_files=False):
         input_file = CONSTANTS.TEMP_FOLDER + "/" + title
-        output_file = CONSTANTS.OUTPUT_FOLDER + "/" + title
+        output_file = CONSTANTS.OUTPUT_FOLDER + "/" + file_folder + "/" + title
         metafile = CONSTANTS.TEMP_FOLDER + "/" + title + "-metafile"
         ffmpeg_command = ('ffmpeg \
             -i "{}.ts"\
             -i "{}.aac"\
             -i "{}" -map_metadata 1\
             -c copy\
-            "{}".mp4'.format(input_file, input_file, metafile, output_file))
+            "{}".mp4 -y'.format(input_file, input_file, metafile, output_file))
 
         subprocess.call(ffmpeg_command, shell=True)
+        if not keep_files:
+            os.remove(os.getcwd() + "/" + CONSTANTS.TEMP_FOLDER + "/" + title +".aac")
+            os.remove(os.getcwd() + "/" + CONSTANTS.TEMP_FOLDER + "/" + title +".aac.part")
+            os.remove(os.getcwd() + "/" + CONSTANTS.TEMP_FOLDER + "/" + title +".ts")
+            os.remove(os.getcwd() + "/" + CONSTANTS.TEMP_FOLDER + "/" + title +".ts.part")
+            os.remove(os.getcwd() + "/" + CONSTANTS.TEMP_FOLDER + "/" + title + "-metafile")
 
-        os.remove(os.getcwd() + "/" + CONSTANTS.TEMP_FOLDER + "/" + title +".aac")
-        os.remove(os.getcwd() + "/" + CONSTANTS.TEMP_FOLDER + "/" + title +".aac.part")
-        os.remove(os.getcwd() + "/" + CONSTANTS.TEMP_FOLDER + "/" + title +".ts")
-        os.remove(os.getcwd() + "/" + CONSTANTS.TEMP_FOLDER + "/" + title +".ts.part")
-        os.remove(os.getcwd() + "/" + CONSTANTS.TEMP_FOLDER + "/" + title + "-metafile")
-        
     def download_playlist(self, playlist, base_url, title, **kwargs):
         # Check if the download directory exists
         self.create_dirs()

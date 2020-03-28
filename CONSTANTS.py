@@ -14,7 +14,7 @@ REALM_HEADERS = {
 
 # FOR THE DOWNLOADER
 DOWNLOAD_HEADERS = {'user-agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:69.0) Gecko/20100101 Firefox/69.0'}
-OUTPUT_FOLDER = "s"
+OUTPUT_FOLDER = "output"
 TEMP_FOLDER = "temp"
 
 

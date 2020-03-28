@@ -30,26 +30,26 @@ class wwe_network:
             return
 
         self._session.headers.update({'Authorization': 'Bearer {}'.format(access_token)})
+        print("Succesfully logged in")
         self.logged_in = True
 
     def login(self):
 
-            payload = {
-                "id": self.user,
-                "secret": self.password
-            }
+        payload = {
+            "id": self.user,
+            "secret": self.password
+        }
 
-            token_data = self._session.post('https://dce-frontoffice.imggaming.com/api/v2/login', json=payload, headers=CONSTANTS.REALM_HEADERS).json()
+        token_data = self._session.post('https://dce-frontoffice.imggaming.com/api/v2/login', json=payload, headers=CONSTANTS.REALM_HEADERS).json()
+        if 'code' in token_data:
+            print("Error while logging in. Possibly invalid username/password")
+            exit()
 
-            if 'code' in token_data:
-                print("Error - {}".format(token_data.get('messages')))
-                exit()
 
+        self.authorisationToken = token_data['authorisationToken']
+        self.refreshToken = token_data['refreshToken']
 
-            self.authorisationToken = token_data['authorisationToken']
-            self.refreshToken = token_data['refreshToken']
-
-            self._set_authentication()
+        self._set_authentication()
 
     # Get the m3u8 stream
     def m3u8_stream(self, stream_link):
@@ -66,19 +66,20 @@ class wwe_network:
         data = []
         for i in entry:
             if i.get("relationshipType") == "milestone":
-                #start = datetime.timedelta(seconds=i["item"]["customFields"].get("StartPoint"))
                 start = int(i["item"]["customFields"].get("StartPoint") * 1000)
-                #end   = datetime.timedelta(seconds=i["item"]["customFields"].get("EndPoint"))
                 end   = int(i["item"]["customFields"].get("EndPoint") * 1000)
+
                 title = i["item"].get("title")
                 data.append([start, end, title])
-        print("start meta data")
+
+        print("\nStarting to wrtie the metadata file")
         meta_file = open("{}/{}-metafile".format(CONSTANTS.TEMP_FOLDER, episode_title), "w")
         meta_file.write(";FFMETADATA1\n\
 title={}\n".format(episode_title))
-        print("done ffmetadata meta data")
+        print("Finished writing the metadata title")
 
         if chapterize:
+            print("\nWriting chapter information")
             for i in data:
                 meta_file.write("[CHAPTER]\n\
     TIMEBASE=1/1000\n\
@@ -86,12 +87,13 @@ title={}\n".format(episode_title))
     END={}\n\
     title={}\n\n".format(str(i[0]), str(i[1]), i[2]))
 
-        print("start strean")
+            print("Finished writing chapter information")
+
+        print("\nWriting stream title")
         meta_file.write("[STREAM]\n\
 title={}".format(episode_title))
-        print("done ffmetadata meta data")
+        print("Finished writing stream title\n")
         meta_file.close()
-        
 
     def _video_url(self, link):
         #playerUrlCallback=https://dve-api.imggaming.com/v/70800?customerId=16&auth=33d8c27ac15ff76b0af3f2fbfc77ba05&timestamp=1564125745670
@@ -103,6 +105,14 @@ title={}".format(episode_title))
         # Link: https://cdn.watch.wwe.com/api/page?path=/episode/This-Tuesday-in-Texas-1991-11831
         # We need   DiceVideoId
         api_link = self._session.get('https://cdn.watch.wwe.com/api/page?path={}'.format(link)).json()
+
+        # If we have an invalid link, quit
+        try:
+            if api_link["message"]:
+                print("Video link is invalid. Exiting now..")
+                return
+        except:
+            pass
 
         entry = api_link['entries'][0]['item']
 

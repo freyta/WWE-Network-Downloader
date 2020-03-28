@@ -10,6 +10,7 @@ parser = argparse.ArgumentParser(description='Download videos off the WWE Networ
 parser.add_argument('-t','--title', help='Link of the video you want to download. Example: /episode/Prime-Time-Wrestling-9283', required=True)
 parser.add_argument('-q','--quality', help='Quality of the video you wish to download. Value between 1 (highest) and 6 (lowest). Defaults to 1080p.', required=False)
 parser.add_argument('-c','--chapter', help='Add chapter "milestones" to the video.', required=False, action='store_true')
+parser.add_argument('-k','--keep_files', help='Keep the temporary download files.', required=False, action='store_true')
 parser.add_argument('-e','--episode_nfo', help='Create a Kodi format NFO TV episode file.', required=False, action='store_true')
 parser.add_argument('-s','--series_nfo', help='Create a Kodi format NFO TV show file.', required=False, action='store_true')
 parser.add_argument('-st','--start_time', help='How far into the video you want to start, in seconds. Note: Will overide other start points.', required=False)
@@ -44,6 +45,11 @@ if "?startPoint=" in EPISODE:
 if not EPISODE.startswith("/"):
     EPISODE = "/" + EPISODE
 
+# Do we want to keep the downloaded files?
+#keep_files = False
+if args['keep_files']:
+    keep_files = True
+
 # Do we want to create an episode or series nfo file as well?
 if args['episode_nfo']:
     create_episode_nfo = True
@@ -70,13 +76,18 @@ if args['quality']:
     QUALITY = CONSTANTS.VIDEO_QUALITY[int(args['quality'])]
 
 # Login
+if CONSTANTS.USERNAME == "" or CONSTANTS.PASSWORD == "":
+    print("Please enter a username and/or password.")
+    exit()
 account = wwe.wwe_network(CONSTANTS.USERNAME,CONSTANTS.PASSWORD)
 account.login()
 
-print("Logged in")
-
 # Get the video JSON which tells us the hls url link
 video_link = account.get_video_info(EPISODE)
+
+# Quit if the video information is empty
+if not video_link:
+    exit()
 
 # Grab the m3u8
 stream_url = account.m3u8_stream(video_link[0])
@@ -155,5 +166,17 @@ download.download_playlist(**kwargs)
 # Download the chapter information\
 account.get_chapter_information(EPISODE, title, args['chapter'])
 
+
+series_info = kodi_nfo.get_show_info(EPISODE)
+if(create_series_nfo):
+    print("Creating Kodi series NFO file")
+    kodi_nfo.create_show_nfo(series_info[1])
+    print("Created Kodi series NFO file")
+
+if(create_episode_nfo):
+    print("Creating Kodi episode NFO file")
+    kodi_nfo.create_episode_nfo(EPISODE, series_info[0], title)
+    print("Created Kodi episode NFO file")
+
 # Finally we want to combine our audio and video files
-download.combine_videos(title)
+download.combine_videos(title, series_info[0], keep_files=keep_files)
