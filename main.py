@@ -21,6 +21,7 @@ args = vars(parser.parse_args())
 
 create_episode_nfo = False
 create_series_nfo = False
+keep_files = False
 # Set the default video quality to 1080p
 QUALITY = CONSTANTS.VIDEO_QUALITY[0]
 
@@ -168,9 +169,14 @@ account.get_chapter_information(EPISODE, title, args['chapter'])
 
 
 series_info = kodi_nfo.get_show_info(EPISODE)
+
+# Create output folder if it doesn't exist
+if not os.path.exists(CONSTANTS.OUTPUT_FOLDER + "/" + series_info[0]):
+    os.makedirs(CONSTANTS.OUTPUT_FOLDER + "/" + series_info[0])
+
 if(create_series_nfo):
     print("Creating Kodi series NFO file")
-    kodi_nfo.create_show_nfo(series_info[1])
+    kodi_nfo.create_show_nfo(series_info[1], series_info[0], series_info[2], series_info[3])
     print("Created Kodi series NFO file")
 
 if(create_episode_nfo):

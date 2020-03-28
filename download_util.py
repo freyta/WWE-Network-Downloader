@@ -53,8 +53,8 @@ class download:
             -i "{}.aac"\
             -i "{}" -map_metadata 1\
             -c copy\
-            "{}".mp4 -y'.format(input_file, input_file, metafile, output_file))
-
+            "{}.mp4" -y'.format(input_file, input_file, metafile, output_file))
+            
         subprocess.call(ffmpeg_command, shell=True)
         if not keep_files:
             os.remove(os.getcwd() + "/" + CONSTANTS.TEMP_FOLDER + "/" + title +".aac")

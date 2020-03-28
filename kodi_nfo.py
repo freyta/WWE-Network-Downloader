@@ -154,28 +154,23 @@ def create_episode_nfo(url, series_folder, file_name = None):
     <trailer></trailer>\n\
 </episodedetails>".format(title,season,episode,description,plot,aired)
 
-    if not os.path.exists(CONSTANTS.OUTPUT_FOLDER + "/" + series_folder):
-        os.makedirs(CONSTANTS.OUTPUT_FOLDER + "/" + series_folder)
-
     f= open(CONSTANTS.OUTPUT_FOLDER + "/" + series_folder + "/{}.nfo".format(file_name),"w+")
     f.write(nfo_text)
 
 
 # Create a Kodi compliant NFO file
-def create_show_nfo(nfo_text):
-
-    if not os.path.exists(CONSTANTS.OUTPUT_FOLDER + "/" + title):
-        os.makedirs(CONSTANTS.OUTPUT_FOLDER + "/" + title)
+def create_show_nfo(nfo_text, title, wallpaper, poster):
+    print(title)
     f= open(CONSTANTS.OUTPUT_FOLDER + "/" + title + "/tvshow.nfo", "w+")
     f.write(nfo_text)
 
     # Download the fanart
-    image = requests.get("{}".format(i['images']['wallpaper']))
+    image = requests.get(wallpaper)
     open(CONSTANTS.OUTPUT_FOLDER + "/" + title + "/fanart.png", "wb").write(image.content)
     print("Saved fanart")
 
     # Download the poster
-    image = requests.get("{}".format(i['images']['poster']))
+    image = requests.get(poster)
     open(CONSTANTS.OUTPUT_FOLDER + "/" + title + "/poster.png", "wb").write(image.content)
     print("Saved poster")
 
@@ -211,5 +206,6 @@ def get_show_info(link):
     <studio>WWE Network</studio>\n\
 </tvshow>".format(title,description,mpaa,random.randint(5,10))
 
-
-    return title, nfo_text
+    wallpaper = i['images']['wallpaper']
+    poster = i['images']['poster']
+    return title, nfo_text, wallpaper, poster
