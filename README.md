@@ -9,6 +9,10 @@ Features include the following:
 - Kodi NFO file creations (TV episode and Series only at the moment - PPV needs to be added)
 - Part downloading of files.
 
+### Prerequisites
+
+You must have at least version 4.2 ffmpeg installed and in your PATH. 
+
 ### Usage instructions
 
 ###### Basic video download:
