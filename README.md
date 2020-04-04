@@ -11,7 +11,11 @@ Features include the following:
 
 ### Prerequisites
 
-You must have at least version 4.2 ffmpeg installed and in your PATH. 
+You must have at least version 4.2 ffmpeg installed and in your PATH.
+
+Using pip3 install the required modules:
+
+`pip3 install --user -r requirements.txt`
 
 ### Usage instructions
 
