@@ -1,11 +1,15 @@
 import wwe
 import json
 import subprocess
-import m3u8, os
+import m3u8, os,re
 import argparse
 import download_util, kodi_nfo, CONSTANTS
 
-# GET ARGS FOR EPISODE TO DOWNLOAonD
+def clean_text(text):
+    # Thanks to https://stackoverflow.com/a/27647173
+    return re.sub(r'[\\\\\\\'/*?:"<>|]',"",text)
+
+# GET ARGS FOR EPISODE TO DOWNLOAD
 parser = argparse.ArgumentParser(description='Download videos off the WWE Network.')
 parser.add_argument('-t','--title', help='Link of the video you want to download. Example: /episode/Prime-Time-Wrestling-9283', required=True)
 parser.add_argument('-q','--quality', help='Quality of the video you wish to download. Value between 1 (highest) and 6 (lowest). Defaults to 1080p.', required=False)
@@ -123,7 +127,7 @@ audio_playlist = download.get_playlist_object(audio_qualities[0][1])
 # The kwargs we will pass to the downloader
 kwargs = {"playlist":audio_playlist,
           "base_url":audio_qualities[0][1].split("index.m3u8")[0],
-          "title":title
+          "title":clean_text(title)
           }
 
 # If we have a start_time then add the set start time, otherwise default to 0
@@ -164,25 +168,24 @@ kwargs.update({"base_url":video_selections[0][1].split("index.m3u8")[0]})
 # Download the playlist
 download.download_playlist(**kwargs)
 
-# Download the chapter information\
-account.get_chapter_information(EPISODE, title, args['chapter'])
-
+# Download the chapter information
+account.get_chapter_information(EPISODE, clean_text(title), args['chapter'])
 
 series_info = kodi_nfo.get_show_info(EPISODE)
 
 # Create output folder if it doesn't exist
-if not os.path.exists(CONSTANTS.OUTPUT_FOLDER + "/" + series_info[0]):
-    os.makedirs(CONSTANTS.OUTPUT_FOLDER + "/" + series_info[0])
+if not os.path.exists(CONSTANTS.OUTPUT_FOLDER + "/" + clean_text(series_info[0])):
+    os.makedirs(CONSTANTS.OUTPUT_FOLDER + "/" + clean_text(series_info[0]))
 
 if(create_series_nfo):
     print("Creating Kodi series NFO file")
-    kodi_nfo.create_show_nfo(series_info[1], series_info[0], series_info[2], series_info[3])
+    kodi_nfo.create_show_nfo(series_info[1], clean_text(series_info[0]), series_info[2], series_info[3])
     print("Created Kodi series NFO file")
 
 if(create_episode_nfo):
     print("Creating Kodi episode NFO file")
-    kodi_nfo.create_episode_nfo(EPISODE, series_info[0], title)
+    kodi_nfo.create_episode_nfo(EPISODE, clean_text(series_info[0]), clean_text(title))
     print("Created Kodi episode NFO file")
 
 # Finally we want to combine our audio and video files
-download.combine_videos(title, series_info[0], keep_files=keep_files)
+download.combine_videos(clean_text(title), clean_text(series_info[0]), keep_files=keep_files)
