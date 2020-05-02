@@ -17,6 +17,8 @@ Using pip3 install the required modules:
 
 `pip3 install --user -r requirements.txt`
 
+Edit the username and password variables in CONSTANTS.py to include your subscription email and password
+
 ### Usage instructions
 
 ###### Basic video download:
