@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import urllib3, certifi
 import m3u8, json
 import datetime
@@ -127,3 +129,7 @@ class download:
             pass
 
         print("\r{} files finished downloading".format(format))
+
+if __name__ == "__main__":
+    print("Please run python main.py instead.")
+    pass

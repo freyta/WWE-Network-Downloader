@@ -72,34 +72,38 @@ class wwe_network:
                 title = i["item"].get("title")
                 data.append([start, end, title])
 
-        print("\nStarting to wrtie the metadata file")
+        print("\nStarting to write the metadata file")
         meta_file = open("{}/{}-metafile".format(CONSTANTS.TEMP_FOLDER, episode_title), "w")
         meta_file.write(";FFMETADATA1\n\
 title={}\n".format(episode_title))
-        print("Finished writing the metadata title")
+        print("Finished writing the metadata file")
 
         if chapterize:
             print("\nWriting chapter information")
             for i in data:
                 meta_file.write("[CHAPTER]\n\
-    TIMEBASE=1/1000\n\
-    START={}\n\
-    END={}\n\
-    title={}\n\n".format(str(i[0]), str(i[1]), i[2]))
+TIMEBASE=1/1000\n\
+START={}\n\
+END={}\n\
+title={}\n\n".format(str(i[0]), str(i[1]), i[2]))
 
             print("Finished writing chapter information")
 
-        print("\nWriting stream title")
+        print("\nStarting to write the stream title")
         meta_file.write("[STREAM]\n\
 title={}".format(episode_title))
-        print("Finished writing stream title\n")
+        print("Finished writing the stream title\n")
         meta_file.close()
 
     def _video_url(self, link):
         #playerUrlCallback=https://dve-api.imggaming.com/v/70800?customerId=16&auth=33d8c27ac15ff76b0af3f2fbfc77ba05&timestamp=1564125745670
         video_url = self._session.get('https://dce-frontoffice.imggaming.com/api/v2/stream/vod/{}'.format(link), headers=CONSTANTS.REALM_HEADERS).json()
-
-        return video_url['playerUrlCallback']
+        try:
+            if video_url['status'] == 403:
+                print("Your subscription is invalid. Quitting.")
+                exit()
+        except:
+            return video_url['playerUrlCallback'], video_url['videoId']
 
     def get_video_info(self, link):
         # Link: https://cdn.watch.wwe.com/api/page?path=/episode/This-Tuesday-in-Texas-1991-11831
@@ -192,4 +196,10 @@ title={}".format(episode_title))
                 .replace("/", " ")
             )
 
-        return self._video_url(api_link['entries'][0]['item']['customFields']['DiceVideoId']), file_name
+        video_url_resp = self._video_url(api_link['entries'][0]['item']['customFields']['DiceVideoId'])
+        return video_url_resp[0], file_name, video_url_resp[1]
+
+
+if __name__ == "__main__":
+    print("Please run python main.py instead.")
+    pass

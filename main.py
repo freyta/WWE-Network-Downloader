@@ -1,14 +1,24 @@
+#!/usr/bin/python3
+
 import wwe
 import json
 import subprocess
 import m3u8, os,re
 import argparse
-import download_util, kodi_nfo, CONSTANTS
+import download_util, kodi_nfo, CONSTANTS, db_util
+import time
 
 def clean_text(text):
     # Thanks to https://stackoverflow.com/a/27647173
     return re.sub(r'[\\\\\\\'/*?:"<>|]',"",text)
 
+<<<<<<< Updated upstream
+def clean_text(text):
+    # Thanks to https://stackoverflow.com/a/27647173
+    return re.sub(r'[\\\\\\\'/*?:"<>|]',"",text)
+
+=======
+>>>>>>> Stashed changes
 # GET ARGS FOR EPISODE TO DOWNLOAD
 parser = argparse.ArgumentParser(description='Download videos off the WWE Network.')
 parser.add_argument('-t','--title', help='Link of the video you want to download. Example: /episode/Prime-Time-Wrestling-9283', required=True)
@@ -20,12 +30,14 @@ parser.add_argument('-s','--series_nfo', help='Create a Kodi format NFO TV show 
 parser.add_argument('-st','--start_time', help='How far into the video you want to start, in seconds. Note: Will overide other start points.', required=False)
 parser.add_argument('-et','--end_time', help='How far into the video you want to stop, in seconds.', required=False)
 parser.add_argument('-of','--output_filename', help='Custom output file name.', required=False)
+parser.add_argument('-f','--force', help='Overwrite previously downloaded files.', required=False, action='store_true')
 
 args = vars(parser.parse_args())
 
 create_episode_nfo = False
 create_series_nfo = False
 keep_files = False
+force_download = False
 # Set the default video quality to 1080p
 QUALITY = CONSTANTS.VIDEO_QUALITY[0]
 
@@ -80,10 +92,14 @@ if args['quality']:
 
     QUALITY = CONSTANTS.VIDEO_QUALITY[int(args['quality'])]
 
+if args['force']:
+    force_download = True
+
 # Login
 if CONSTANTS.USERNAME == "" or CONSTANTS.PASSWORD == "":
     print("Please enter a username and/or password.")
     exit()
+
 account = wwe.wwe_network(CONSTANTS.USERNAME,CONSTANTS.PASSWORD)
 account.login()
 
@@ -102,6 +118,20 @@ else:
     title = CUSTOM_FILENAME
 
 print("Got the video information")
+
+# Connect to the database where we store which videos we have downloaded
+database = db_util.database()
+database.db_connect()
+
+# Check if we have already downloaded the video before.
+db_q = database.db_query(video_link[2])
+
+# If we haven't forced the download, then we will display an error and quit
+if not force_download and db_q:
+    print("You have already downloaded this video.")
+    print("If you want to download this file anyway, please use --force or -f")
+    print("Quitting.")
+    exit()
 
 # Get the base url of our video
 base_url = stream_url.split(".m3u8")[0].rsplit("/", 1)
@@ -189,3 +219,14 @@ if(create_episode_nfo):
 
 # Finally we want to combine our audio and video files
 download.combine_videos(clean_text(title), clean_text(series_info[0]), keep_files=keep_files)
+<<<<<<< Updated upstream
+=======
+
+# Insert the downloaded video into our database
+if db_q:
+    database.db_upd(video_link[2], video_link[1], str(video_selections[0][0]), int(time.time()))
+    print("Updated database with the new video information")
+else:
+    print("Inserted the video into the database")
+    database.db_ins(video_link[2], video_link[1], str(video_selections[0][0]), int(time.time()))
+>>>>>>> Stashed changes

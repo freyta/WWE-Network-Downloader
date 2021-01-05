@@ -1,8 +1,10 @@
+#!/usr/bin/python3
+
 import CONSTANTS, os
 import json, random
 import requests
 import arrow
-#from main import make_safe_filename
+
 
 def make_safe_filename(s):
     def safe_char(c):
@@ -123,9 +125,7 @@ def create_episode_nfo(url, series_folder, file_name = None):
     if (entry.get('episodeNumber') == '0'):
         ep_num = "00"
 
-    print(ep_num)
     if not file_name:
-        print(file_name)
         file_name = '{} {} - S{}E{} - {}'.format(entry['customFields']['Franchise'],
                                     entry['episodeName'],
                                     entry['releaseYear'],
@@ -154,6 +154,10 @@ def create_episode_nfo(url, series_folder, file_name = None):
     <trailer></trailer>\n\
 </episodedetails>".format(title,season,episode,description,plot,aired)
 
+
+    if not os.path.isdir("./{}/{}".format(CONSTANTS.OUTPUT_FOLDER,series_folder)):
+        os.mkdir("./{}/{}".format(CONSTANTS.OUTPUT_FOLDER,series_folder))
+
     f= open(CONSTANTS.OUTPUT_FOLDER + "/" + series_folder + "/{}.nfo".format(file_name),"w+")
     f.write(nfo_text)
 
@@ -176,12 +180,19 @@ def create_show_nfo(nfo_text, title, wallpaper, poster):
 
 # Get the basics for our Kodi NFO and the series name
 def get_show_info(link):
-    show_json = requests.get("https://cdn.watch.wwe.com/api/page?list_page_size=100&path={}&item_detail_expand=all".format(link)).json()
+    URL = "https://cdn.watch.wwe.com/api/page?list_page_size=100&path={}&item_detail_expand=all".format(link)
+    show_json = requests.get(URL).json()
 
-    try:
-        show_json = requests.get("https://cdn.watch.wwe.com/api/page?list_page_size=100&path={}&item_detail_expand=all".format(show_json['entries'][0]['item']['season']['path'])).json()
-    except KeyError:
-        pass
+    #try:
+    #    NEW_URL = "https://cdn.watch.wwe.com/api/page?list_page_size=100&path={}&item_detail_expand=all".format(show_json['entries'][0]['item']['season']['path'])
+    #    print(NEW_URL)
+    #    show_json = requests.get(NEW_URL).json()
+    #except KeyError:
+    #    pass
+
+    #f = open("test.txt","w")
+    #f.write(json.dumps(show_json, indent=4))
+    #exit()
 
     i = show_json['entries'][0]['item']
     franchise = i['customFields']['Franchise']
@@ -209,3 +220,8 @@ def get_show_info(link):
     wallpaper = i['images']['wallpaper']
     poster = i['images']['poster']
     return title, nfo_text, wallpaper, poster
+
+
+if __name__ == "__main__":
+    print("Please run python main.py instead.")
+    pass
