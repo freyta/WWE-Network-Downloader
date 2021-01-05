@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 # USERNAME AND PASSWORD
 USERNAME = ""
 PASSWORD = ""
@@ -26,3 +28,7 @@ VIDEO_QUALITY = [10000, # 1080p high
                  1500,  # 504p
                  1000,  # 360p
                  600]   # 288p
+
+if __name__ == "__main__":
+    print("Please run python main.py instead.")
+    pass
