@@ -12,13 +12,6 @@ def clean_text(text):
     # Thanks to https://stackoverflow.com/a/27647173
     return re.sub(r'[\\\\\\\'/*?:"<>|]',"",text)
 
-<<<<<<< Updated upstream
-def clean_text(text):
-    # Thanks to https://stackoverflow.com/a/27647173
-    return re.sub(r'[\\\\\\\'/*?:"<>|]',"",text)
-
-=======
->>>>>>> Stashed changes
 # GET ARGS FOR EPISODE TO DOWNLOAD
 parser = argparse.ArgumentParser(description='Download videos off the WWE Network.')
 parser.add_argument('-t','--title', help='Link of the video you want to download. Example: /episode/Prime-Time-Wrestling-9283', required=True)
@@ -219,8 +212,6 @@ if(create_episode_nfo):
 
 # Finally we want to combine our audio and video files
 download.combine_videos(clean_text(title), clean_text(series_info[0]), keep_files=keep_files)
-<<<<<<< Updated upstream
-=======
 
 # Insert the downloaded video into our database
 if db_q:
@@ -229,4 +220,3 @@ if db_q:
 else:
     print("Inserted the video into the database")
     database.db_ins(video_link[2], video_link[1], str(video_selections[0][0]), int(time.time()))
->>>>>>> Stashed changes
