@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src='https://meet.jit.si/external_api.js'></script>
+    <link rel="stylesheet" href="style.css">
+    <title>Online Meeting</title>
+</head>
+<body>
+    <section class="showcase">
+        <header>
+          <h2 class="logo">WEB MEET</h2>
+          <div class="toggle"></div>
+        </header>
+        <video src="video.mp4" muted loop autoplay></video>
+        <div class="overlay"></div>
+        <div class="text">
+          <h2>Web meet bring</h2> 
+          <h3>The Onlie new World</h3>
+          <p>We created free service that is for new online virtual World. WEB MEET is free for all.</p>
+          <a href="online_meet.html">Start meeting</a>
+          <a href="online_meet.html">Join meeting</a>
+
+          
+          
+        </div>
+        <ul class="social">
+          <li><a href="#"><img src="https://i.ibb.co/x7P24fL/facebook.png"></a></li>
+          <li><a href="#"><img src="https://i.ibb.co/Wnxq2Nq/twitter.png"></a></li>
+          <li><a href="#"><img src="https://i.ibb.co/ySwtH4B/instagram.png"></a></li>
+        </ul>
+        <script>
+             const menuToggle = document.querySelector('.toggle');
+      const showcase = document.querySelector('.showcase');
+
+      menuToggle.addEventListener('click', () => {
+        menuToggle.classList.toggle('active');
+        showcase.classList.toggle('active');
+      })
+        </script>
+      </section>
+      
+
+        
+      
+      
+     
+
+    
+</body>
+</html>
