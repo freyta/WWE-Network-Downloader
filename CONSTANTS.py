@@ -5,12 +5,10 @@ USERNAME = ""
 PASSWORD = ""
 
 # TO GET THE EPISODE JSON INFORMATION
-HEADERS = {
-    'User-Agent': 'okhttp/3.12.1'
-}
+HEADERS = {'user-agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:69.0) Gecko/20100101 Firefox/69.0'}
 
 REALM_HEADERS = {
-    'x-api-key': '640a69fb-68b1-472c-ba4b-36f50288c984',
+    'x-api-key': 'cca51ea0-7837-40df-a055-75eb6347b2e7',
     'realm': 'dce.wwe'
 }
 
