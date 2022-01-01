@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import CONSTANTS, os
-import json, random
+import random
 import requests
 import arrow
 
@@ -20,13 +20,13 @@ def create_multi_ep_nfo(show_list):
     for i in show_list:
         try:
             # Get the show JSON file
-            show_json = requests.get('https://cdn.watch.wwe.com/api/page?path={}'.format(i)).json()
+            show_json = requests.get(f'https://cdn.watch.wwe.com/api/page?path={i}').json()
 
             entry = show_json['entries'][0]['item']
 
             #try:
             # .title() makes JUL turn into Jul - camelcase.
-            title = '{} {} - {}'.format(entry['customFields']['Franchise'], entry['episodeName'], entry['metadataLines'][0]['lines'][1].title())
+            title = f"{entry['customFields']['Franchise']} {entry['episodeName']} - {entry['metadataLines'][0]['lines'][1].title()}"
             try:
                 plot = entry['description']
             except:
@@ -44,11 +44,8 @@ def create_multi_ep_nfo(show_list):
                 ep_num = "0" + str(entry['episodeNumber'])
             else:
                 ep_num = entry['episodeNumber']
-            file_name = '{} {} - S{}E{} - {}'.format(entry['customFields']['Franchise'],
-                                            entry['episodeName'],
-                                            entry['releaseYear'],
-                                            ep_num,
-                                            file_date)
+            file_name = f"{entry['customFields']['Franchise']} {entry['episodeName']}\
+                - S{entry['releaseYear']}E{ep_num} - {file_date}"
 
             # FORMAT:
             # 0 = title
@@ -58,19 +55,19 @@ def create_multi_ep_nfo(show_list):
             # 4 - Plot
             # 5 - aired
 
-            nfo_text = "<episodedetails>\n\
-        <title>{0}</title>\n\
-        <season>{1}</season>\n\
-        <episode>{2}</episode>\n\
-        <outline>{3}</outline>\n\
-        <plot>{4}</plot>\n\
+            nfo_text = f"<episodedetails>\n\
+        <title>{title}</title>\n\
+        <season>{season}</season>\n\
+        <episode>{episode}</episode>\n\
+        <outline>{description}</outline>\n\
+        <plot>{plot}</plot>\n\
         <id></id>\n\
         <genre>Sport</genre>\n\
-        <year>{1}</year>\n\
-        <aired>{5}</aired>\n\
+        <year>{season}</year>\n\
+        <aired>{aired}</aired>\n\
         <studio>WWE Network</studio>\n\
         <trailer></trailer>\n\
-    </episodedetails>".format(title,season,episode,description,plot,aired)
+    </episodedetails>"
 
             #f= open("{}.nfo".format(file_name),"w+")
             #f.write(nfo_text)
@@ -83,7 +80,7 @@ def create_multi_ep_nfo(show_list):
 def create_episode_nfo(url, series_folder, file_name = None):
     id = []
     # Get the show JSON file
-    show_json = requests.get('https://cdn.watch.wwe.com/api/page?path={}'.format(url)).json()
+    show_json = requests.get(f'https://cdn.watch.wwe.com/api/page?path={url}').json()
 
     entry = show_json['entries'][0]['item']
 
@@ -126,79 +123,56 @@ def create_episode_nfo(url, series_folder, file_name = None):
         ep_num = "00"
 
     if not file_name:
-        file_name = '{} {} - S{}E{} - {}'.format(entry['customFields']['Franchise'],
-                                    entry['episodeName'],
-                                    entry['releaseYear'],
-                                    ep_num,
-                                    file_date)
+        file_name = f"{entry['customFields']['Franchise']} {entry['episodeName']} -\
+                      S{entry['releaseYear']}E{ep_num} - {file_date}"
 
-    # FORMAT:
-    # 0 = title
-    # 1 - Year + Season
-    # 2 - Episode
-    # 3 - Outline
-    # 4 - Plot
-    # 5 - aired
-
-    nfo_text = "<episodedetails>\n\
-    <title>{0}</title>\n\
-    <season>{1}</season>\n\
-    <episode>{2}</episode>\n\
-    <outline>{3}</outline>\n\
-    <plot>{4}</plot>\n\
+    nfo_text = f"<episodedetails>\n\
+    <title>{title}</title>\n\
+    <season>{season}</season>\n\
+    <episode>{episode}</episode>\n\
+    <outline>{description}</outline>\n\
+    <plot>{plot}</plot>\n\
     <id></id>\n\
     <genre>Sport</genre>\n\
-    <year>{1}</year>\n\
-    <aired>{5}</aired>\n\
+    <year>{season}</year>\n\
+    <aired>{aired}</aired>\n\
     <studio>WWE Network</studio>\n\
     <trailer></trailer>\n\
-</episodedetails>".format(title,season,episode,description,plot,aired)
+</episodedetails>"
 
 
-    if not os.path.isdir("./{}/{}".format(CONSTANTS.OUTPUT_FOLDER,series_folder)):
-        os.mkdir("./{}/{}".format(CONSTANTS.OUTPUT_FOLDER,series_folder))
+    if not os.path.isdir(f"./{CONSTANTS.OUTPUT_FOLDER}/{series_folder}"):
+        os.mkdir(f"./{CONSTANTS.OUTPUT_FOLDER}/{series_folder}")
 
-    f= open(CONSTANTS.OUTPUT_FOLDER + "/" + series_folder + "/{}.nfo".format(file_name),"w+")
+    f = open(f"{CONSTANTS.OUTPUT_FOLDER}/{series_folder}/{file_name}.nfo","w+")
     f.write(nfo_text)
 
 
 # Create a Kodi compliant NFO file
 def create_show_nfo(nfo_text, title, wallpaper, poster):
     print(title)
-    f= open(CONSTANTS.OUTPUT_FOLDER + "/" + title + "/tvshow.nfo", "w+")
-    f.write(nfo_text)
+    f = open(f"{CONSTANTS.OUTPUT_FOLDER}/{title}/tvshow.nfo", "w+").write(nfo_text)
 
     # Download the fanart
     image = requests.get(wallpaper)
-    open(CONSTANTS.OUTPUT_FOLDER + "/" + title + "/fanart.png", "wb").write(image.content)
+    open(f"{CONSTANTS.OUTPUT_FOLDER}/{title}/fanart.png", "wb").write(image.content)
     print("Saved fanart")
 
     # Download the poster
     image = requests.get(poster)
-    open(CONSTANTS.OUTPUT_FOLDER + "/" + title + "/poster.png", "wb").write(image.content)
+    open(f"{CONSTANTS.OUTPUT_FOLDER}/{title}/poster.png", "wb").write(image.content)
     print("Saved poster")
 
 # Get the basics for our Kodi NFO and the series name
 def get_show_info(link):
-    URL = "https://cdn.watch.wwe.com/api/page?list_page_size=100&path={}&item_detail_expand=all".format(link)
+    URL = f"https://cdn.watch.wwe.com/api/page?list_page_size=100&path={link}&item_detail_expand=all"
     show_json = requests.get(URL).json()
-
-    #try:
-    #    NEW_URL = "https://cdn.watch.wwe.com/api/page?list_page_size=100&path={}&item_detail_expand=all".format(show_json['entries'][0]['item']['season']['path'])
-    #    print(NEW_URL)
-    #    show_json = requests.get(NEW_URL).json()
-    #except KeyError:
-    #    pass
-
-    #f = open("test.txt","w")
-    #f.write(json.dumps(show_json, indent=4))
-    #exit()
 
     i = show_json['entries'][0]['item']
     franchise = i['customFields']['Franchise']
     title = i['title']
     if franchise not in title[:len(franchise)]:
-        title = "{} {}".format(i['customFields']['Franchise'], i['title'])
+        title = f"{i['customFields']['Franchise']} {i['title']}"
     description = i['description']
     mpaa = i['classification']['name']
     # FORMAT:
@@ -206,16 +180,16 @@ def get_show_info(link):
     # 1 - description
     # 2 - mpaa
 
-    nfo_text = "<tvshow>\n\
-    <title>{0}</title>\n\
-    <showtitle>{0}</showtitle>\n\
-    <userrating>{3}</userrating>\n\
-    <outline>{1}</outline>\n\
-    <plot>{1}</plot>\n\
-    <mpaa>{2}</mpaa>\n\
+    nfo_text = f"<tvshow>\n\
+    <title>{title}</title>\n\
+    <showtitle>{title}</showtitle>\n\
+    <userrating>{random.randint(5,10)}</userrating>\n\
+    <outline>{description}</outline>\n\
+    <plot>{description}</plot>\n\
+    <mpaa>{mpaa}</mpaa>\n\
     <genre>Sports</genre>\n\
     <studio>WWE Network</studio>\n\
-</tvshow>".format(title,description,mpaa,random.randint(5,10))
+</tvshow>"
 
     wallpaper = i['images']['wallpaper']
     poster = i['images']['poster']

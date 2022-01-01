@@ -1,11 +1,7 @@
 #!/usr/bin/python3
 
-import os, sys
-import subprocess
-from time import time
-import arrow, datetime
-import requests, json, m3u8
-
+import arrow
+import requests
 import CONSTANTS
 
 
@@ -20,6 +16,12 @@ class wwe_network:
         self.password = password
         self.logged_in = False
 
+    def refresh_token(self):
+        if not self.refreshToken:
+            print("No refresh token found")
+            return
+        xx = self._session.post('https://dce-frontoffice.imggaming.com/api/v2/token/refresh', json={'refreshToken': self.refreshToken})
+        exit()
 
 
     def _set_authentication(self):
@@ -29,7 +31,7 @@ class wwe_network:
             print("No access token found.")
             return
 
-        self._session.headers.update({'Authorization': 'Bearer {}'.format(access_token)})
+        self._session.headers.update({'Authorization': f'Bearer {access_token}'})
         print("Succesfully logged in")
         self.logged_in = True
 
@@ -57,10 +59,33 @@ class wwe_network:
         #https://dve-api.imggaming.com/v/70800?customerId=16&auth=1f7512c7c2b7474abf723188038b32c1&timestamp=1564126721496
         stream = self._session.get(stream_link, headers=CONSTANTS.REALM_HEADERS).json()
 
-        return stream['hls']['url']
+        # Get our subtitle stream
+        for i in stream['subtitles']:
+            if i['format'] == "vtt":
+                subtitle_stream = i['url']
+                break
+            
+        return stream['hls']['url'], subtitle_stream
+
+
+    # Download the subtitles to the temp folder
+    def download_subtitles(self, link, episode_title):
+        # Get the substitle file
+        subtitle_data = self._session.get(link).content.decode()
+        print("\nStarting to write the subtitle file")
+
+        # Open and write the subtitle data
+        vtt_file = open(f"{CONSTANTS.TEMP_FOLDER}/{episode_title}.vtt", "w")
+        vtt_file.write(subtitle_data)
+        
+        print("Finished writing the subtitle file")
+        # Close the file
+        vtt_file.close()
+
+
 
     def get_chapter_information(self, link, episode_title, chapterize=False):
-        api_link = self._session.get('https://cdn.watch.wwe.com/api/page?path={}'.format(link)).json()
+        api_link = self._session.get(f'https://cdn.watch.wwe.com/api/page?path={link}').json()
 
         entry = api_link["entries"][0]["item"].get("relatedItems")
         data = []
@@ -73,31 +98,26 @@ class wwe_network:
                 data.append([start, end, title])
 
         print("\nStarting to write the metadata file")
-        meta_file = open("{}/{}-metafile".format(CONSTANTS.TEMP_FOLDER, episode_title), "w")
-        meta_file.write(";FFMETADATA1\n\
-title={}\n".format(episode_title))
+        meta_file = open(f"{CONSTANTS.TEMP_FOLDER}/{episode_title}-metafile", "w")
+        meta_file.write(f";FFMETADATA1\n\
+title={episode_title}\n")
         print("Finished writing the metadata file")
 
         if chapterize:
             print("\nWriting chapter information")
             for i in data:
-                meta_file.write("[CHAPTER]\n\
-TIMEBASE=1/1000\n\
-START={}\n\
-END={}\n\
-title={}\n\n".format(str(i[0]), str(i[1]), i[2]))
+                meta_file.write(f"[CHAPTER]\nTIMEBASE=1/1000\nSTART={str(i[0])}\nEND={str(i[1])}\ntitle={i[2]}\n\n")
 
             print("Finished writing chapter information")
 
         print("\nStarting to write the stream title")
-        meta_file.write("[STREAM]\n\
-title={}".format(episode_title))
+        meta_file.write(f"[STREAM]\ntitle={episode_title}")
         print("Finished writing the stream title\n")
         meta_file.close()
 
     def _video_url(self, link):
         #playerUrlCallback=https://dve-api.imggaming.com/v/70800?customerId=16&auth=33d8c27ac15ff76b0af3f2fbfc77ba05&timestamp=1564125745670
-        video_url = self._session.get('https://dce-frontoffice.imggaming.com/api/v2/stream/vod/{}'.format(link), headers=CONSTANTS.REALM_HEADERS).json()
+        video_url = self._session.get(f'https://dce-frontoffice.imggaming.com/api/v2/stream/vod/{link}', headers=CONSTANTS.REALM_HEADERS).json()
         try:
             if video_url['status'] == 403:
                 print("Your subscription is invalid. Quitting.")
@@ -108,7 +128,7 @@ title={}".format(episode_title))
     def get_video_info(self, link):
         # Link: https://cdn.watch.wwe.com/api/page?path=/episode/This-Tuesday-in-Texas-1991-11831
         # We need   DiceVideoId
-        api_link = self._session.get('https://cdn.watch.wwe.com/api/page?path={}'.format(link)).json()
+        api_link = self._session.get(f'https://cdn.watch.wwe.com/api/page?path={link}').json()
 
         # If we have an invalid link, quit
         try:
@@ -175,15 +195,9 @@ title={}".format(episode_title))
             # but "WrestleMania 35" doesn't. Since we don't want to have "This Tuesday in Texas 1991 1991" as
             # our filename we will just use the PPV title
             if str(ppv_year) in ppv_title:
-                file_name = "{} {}".format(
-                    entry["customFields"]["Franchise"], entry["episodeName"]
-                )
+                file_name = f'{entry["customFields"]["Franchise"]}k {entry["episodeName"]}'
             else:
-                file_name = "{} {} {}".format(
-                    entry["customFields"]["Franchise"],
-                    entry["episodeName"],
-                    entry["releaseYear"],
-                )
+                file_name = f'{entry["customFields"]["Franchise"]} {entry["episodeName"]} {entry["releaseYear"]}'
         else:
             if not entry.get('title'):
                 raise Exception("Unrecognized event type")

@@ -2,7 +2,6 @@
 
 import urllib3, certifi
 import m3u8, json
-import datetime
 import sys, subprocess, os
 import CONSTANTS
 
@@ -15,10 +14,10 @@ class download:
 
     def create_dirs(self):
         # If the download directory doesn't exist, we need to create it
-        if not os.path.isdir("./{}".format(CONSTANTS.OUTPUT_FOLDER)):
-            os.mkdir("./{}".format(CONSTANTS.OUTPUT_FOLDER))
-        if not os.path.isdir("./{}".format(CONSTANTS.TEMP_FOLDER)):
-            os.mkdir("./{}".format(CONSTANTS.TEMP_FOLDER))
+        if not os.path.isdir(f"./{CONSTANTS.OUTPUT_FOLDER}"):
+            os.mkdir(f"./{CONSTANTS.OUTPUT_FOLDER}")
+        if not os.path.isdir(f"./{CONSTANTS.TEMP_FOLDER}"):
+            os.mkdir(f"./{CONSTANTS.TEMP_FOLDER}")
 
     def get_index_m3u8(self, link):
         # Return the contents of the m3u8 playlist
@@ -46,24 +45,42 @@ class download:
         part = json.load(json_file)
         return float(part.get("current_time"))
 
-    def combine_videos(self, title, file_folder, keep_files=False):
+    def combine_videos(self, title, file_folder, keep_files=False, has_subtitles=False):
         input_file = CONSTANTS.TEMP_FOLDER + "/" + title
         output_file = CONSTANTS.OUTPUT_FOLDER + "/" + file_folder + "/" + title
         metafile = CONSTANTS.TEMP_FOLDER + "/" + title + "-metafile"
-        ffmpeg_command = ('ffmpeg \
-            -i "{}.ts"\
-            -i "{}.aac"\
-            -i "{}" -map_metadata 1\
-            -c copy\
-            "{}.mp4" -y'.format(input_file, input_file, metafile, output_file))
-            
+        
+        # If we have downloaded subtitles, add them to the command
+        if has_subtitles:
+            subtitles = CONSTANTS.TEMP_FOLDER + "/" + title + ".vtt"
+            ffmpeg_command = (f'ffmpeg \
+                -i "{subtitles}"\
+                -i "{input_file}.ts"\
+                -i "{input_file}.aac"\
+                -i "{metafile}" -map_metadata 1\
+                -c copy\
+                -c:s mov_text\
+                "{output_file}.mp4" -y')
+        else:
+            ffmpeg_command = (f'ffmpeg \
+                -i "{input_file}.ts"\
+                -i "{input_file}.aac"\
+                -i "{metafile}" -map_metadata 1\
+                -c copy\
+                "{output_file}.mp4" -y')
+
         subprocess.call(ffmpeg_command, shell=True)
         if not keep_files:
-            os.remove(os.getcwd() + "/" + CONSTANTS.TEMP_FOLDER + "/" + title +".aac")
-            os.remove(os.getcwd() + "/" + CONSTANTS.TEMP_FOLDER + "/" + title +".aac.part")
-            os.remove(os.getcwd() + "/" + CONSTANTS.TEMP_FOLDER + "/" + title +".ts")
-            os.remove(os.getcwd() + "/" + CONSTANTS.TEMP_FOLDER + "/" + title +".ts.part")
-            os.remove(os.getcwd() + "/" + CONSTANTS.TEMP_FOLDER + "/" + title + "-metafile")
+            os.remove(f"{os.getcwd()}/{CONSTANTS.TEMP_FOLDER}/{title}.aac")
+            os.remove(f"{os.getcwd()}/{CONSTANTS.TEMP_FOLDER}/{title}.aac.part")
+            os.remove(f"{os.getcwd()}/{CONSTANTS.TEMP_FOLDER}/{title}.ts")
+            os.remove(f"{os.getcwd()}/{CONSTANTS.TEMP_FOLDER}/{title}.ts.part")
+            os.remove(f"{os.getcwd()}/{CONSTANTS.TEMP_FOLDER}/{title}-metafile")
+            # Try to remove the subtitles file, we will error if it isn't found
+            try:
+                os.remove(f"{os.getcwd()}/{CONSTANTS.TEMP_FOLDER}/{title}.vtt")
+            except FileNotFoundError:
+                pass
 
     def download_playlist(self, playlist, base_url, title, **kwargs):
         # Check if the download directory exists
@@ -92,8 +109,8 @@ class download:
             # If we have already started to download a file and it still exists,
             # we will have a temp file called ".part". We will open it to see
             # where we will continue downloading from
-            if os.path.exists("{}.{}".format(title, format)):
-               start_from = self.read_part_file("{}.{}.part".format(title, format))
+            if os.path.exists(f"{title}.{format}"):
+               start_from = self.read_part_file(f"{title}.{format}.part")
         except:
             pass
 
@@ -106,29 +123,29 @@ class download:
         try:
             for i in playlist.segments:
                 if current_time >= start_from and current_time <= end_time:
-                    current_file = i.uri.split('.{}'.format(format))[0]
+                    current_file = i.uri.split(f".{format}")[0]
                     # Example: 66 ts files downloaded out of 121
                     # Note: there is a bug where it will show all of the files in the playlist
                     # even if we just want a portion of it.
-                    sys.stdout.write("\r{} {} files downloaded out of {}".format(current_file, format, files_to_download))
+                    sys.stdout.write(f"\r{current_file} {format} files downloaded out of {files_to_download}")
 
                     # Get the base link for the audio files and then open the URL
                     download_data = self.http.request('GET', base_url+i.uri)
                     # Now we append the data to the download file and clear the programs buffer
-                    self.write_data(download_data.data, "{}.{}".format(title, format))
+                    self.write_data(download_data.data, f"{title}.{format}")
                     # Clear the stdout internal buffer
                     sys.stdout.flush()
                 # After adding the downloaded data, we increment the duration
                 current_time += i.duration
                 # Save where we are upto in the download process
-                self.write_upto(current_time, "{}.{}".format(title, format))
+                self.write_upto(current_time, f"{title}.{format}")
             # Since we downloaded the whole file we will delete out part
             #os.remove(title+"."+format+".part")
         except KeyboardInterrupt:
             # We want to cancel the current operation
             pass
 
-        print("\r{} files finished downloading".format(format))
+        print(f"\r{format} files finished downloading")
 
 if __name__ == "__main__":
     print("Please run python main.py instead.")

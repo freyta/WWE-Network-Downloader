@@ -21,28 +21,31 @@ class database:
             # id = DiceVideoId
             # name = the name of event/episode
             # quality = bitrate
+            # partial = true/false
             # date = timestamp
-            self.c.execute("CREATE TABLE downloads (id integer unique, name text, quality text, date integer)")
+            self.c.execute("CREATE TABLE downloads (id integer unique, name text, quality text, partial_download text, date integer)")
             self.conn.commit()
 
     # Insert download into the database
-    def db_ins(self, video_id, video_name, video_qual, timestamp):
+    def db_ins(self, video_id, video_name, video_qual, partial, timestamp):
         try:
-            self.c.execute("INSERT INTO downloads VALUES ('{}', '{}', '{}', '{}')".format(video_id, video_name, video_qual, timestamp))
+            self.c.execute(f"INSERT INTO downloads VALUES ('{video_id}', '{video_name}', '{video_qual}',  '{partial}', '{timestamp}')")
             self.conn.commit()
         except sqlite3.IntegrityError: 
-            print("Error: Couldn't add {} to the database. ID already exists.".format(video_id))
+            print(f"Error: Couldn't add {video_id} to the database. ID already exists.")
 
     # Update download information in the database
-    def db_upd(self, video_id, video_name, video_qual, timestamp):
-        self.c.execute("UPDATE downloads SET name = '{}', quality = '{}', date = '{}' WHERE id = {}".format(video_name, video_qual, timestamp, video_id))
-        print("UPDATE downloads SET name = '{}', quality = '{}', date = '{}' WHERE id = {}".format(video_name, video_qual, timestamp, video_id))
+    def db_upd(self, video_id, video_name, video_qual, partial, timestamp):
+        self.c.execute(f"UPDATE downloads SET name = '{video_name}', quality = '{video_qual}', partial_download = '{partial}', date = '{timestamp}' WHERE id = {video_id}")
         self.conn.commit()
 
     # Query the database for previously downloaded episode
-    def db_query(self, video_id):
-        #self.c.execute("INSERT INTO downloads VALUES ('{}', '{}', '{}', '{}')".format(video_id, video_name, video_qual, timestamp))
-        result = self.c.execute("SELECT date FROM downloads WHERE id = '{}'".format(video_id))
+    def db_query(self, video_id, is_partial_download):
+        if not is_partial_download:
+            result = self.c.execute(f"SELECT date FROM downloads WHERE id = '{video_id}'")
+        else:
+            result = self.c.execute(f"SELECT date FROM downloads WHERE id = '{video_id}' AND partial_download = 'True'")
+        
         if result.fetchone():
             return True
         else:

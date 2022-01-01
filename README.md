@@ -36,12 +36,16 @@ Edit the username and password variables in CONSTANTS.py to include your subscri
 
 ### Options
 
-> **-t** - Link to the video you want to download\
-> **-q** - Quality of the video you want to download. 1 is 1080p high (default) 6 being 288p (lowest)\
+> **-t** - Link to the video you want to download.\
+> **-q** - Quality of the video you want to download. 1 is 1080p high (default) 6 being 288p (lowest).\
 > **-c** - Add milestone chapters to the video.\
-> **-k** - Keep temporary aac and ts files\
-> **-e** - Write a Kodi episode NFO file\
-> **-s** - Write a Kodi series NFO file with poster and fanart\
-> **-st** - Start time in seconds from where you want to start downloading\
-> **-et** - End time in seconds from where you want to finish downloading\
-> **-of** - Custom output filename
+> **--subtitles** - Downloads the subtitles.\
+> **-k** - Keep temporary aac and ts files.\
+> **-e** - Write a Kodi episode NFO file.\
+> **-s** - Write a Kodi series NFO file with poster and fanart.\
+> **-st** - Start time in seconds from where you want to start downloading.\
+> **-et** - End time in seconds from where you want to finish downloading.\
+> **-f** - Force the download of the video. Overwrites previously downloaded files.\
+
+
+
