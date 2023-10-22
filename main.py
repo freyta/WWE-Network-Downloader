@@ -205,7 +205,7 @@ download_threads.append(video_thread)
 # Wait for all threads to be finished
 for thread in download_threads:
     thread.join()
-exit()
+
 # Download the chapter information
 account.write_metadata(stream_url[2], clean_text(title), args['chapter'], START_FROM, END_TIME)
 
