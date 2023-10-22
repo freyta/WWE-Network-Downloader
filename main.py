@@ -13,13 +13,11 @@ def clean_text(text):
 
 # GET ARGS FOR EPISODE TO DOWNLOAD
 parser = argparse.ArgumentParser(description='Download videos off the WWE Network.')
-parser.add_argument('-t','--title', help='Link of the video you want to download. Example: /episode/Prime-Time-Wrestling-9283', required=True)
+parser.add_argument('-t','--title', help='Link of the video you want to download. Example: https://network.wwe.com/video/178225', required=True)
 parser.add_argument('-q','--quality', help='Quality of the video you wish to download. Value between 1 (highest) and 6 (lowest). Defaults to 1080p.', required=False)
 parser.add_argument('-c','--chapter', help='Add chapter "milestones" to the video.', required=False, action='store_true')
-parser.add_argument('--subtitles', help='Add subtitles to the video.', required=False, action='store_true')
+parser.add_argument('-s','--subtitles', help='Add subtitles to the video.', required=False, action='store_true')
 parser.add_argument('-k','--keep_files', help='Keep the temporary download files.', required=False, action='store_true')
-parser.add_argument('-e','--episode_nfo', help='Create a Kodi format NFO TV episode file.', required=False, action='store_true')
-parser.add_argument('-s','--series_nfo', help='Create a Kodi format NFO TV show file.', required=False, action='store_true')
 parser.add_argument('-st','--start_time', help='How far into the video you want to start, in seconds. Note: Will overide other start points.', required=False)
 parser.add_argument('-et','--end_time', help='How far into the video you want to stop, in seconds.', required=False)
 parser.add_argument('-of','--output_filename', help='Custom output file name.', required=False)
@@ -27,8 +25,6 @@ parser.add_argument('-f','--force', help='Overwrite previously downloaded files.
 
 args = vars(parser.parse_args())
 
-create_episode_nfo = False
-create_series_nfo = False
 keep_files = False
 force_download = False
 download_subtitles = False
@@ -39,34 +35,20 @@ QUALITY = CONSTANTS.VIDEO_QUALITY[0]
 # Get the episode title
 if args['title']:
     EPISODE = args['title']
-    if "https://watch.wwe.com" in EPISODE:
-        EPISODE = EPISODE.replace("https://watch.wwe.com", "")
+    if "https://network.wwe.com/video/" in EPISODE:
+        EPISODE = EPISODE.replace("https://network.wwe.com/video/", "")
+    else:
+        print("Invalid link format. It should contain \"https://network.wwe.com/video/\"")
+        exit()
 
 # If the title wasn't set
 if not EPISODE:
 	print("No episode found. Use the --title or -t parameter.")
 	exit()
 
-# Some links have a starting point in their link, i.e https://watch.wwe.com/episode/Expect-The-Unexpected-9842?startPoint=371.701
-if "?startPoint=" in EPISODE:
-    # Make the starting point of our download the start point in the URL
-    START_FROM = EPISODE.split("?startPoint=")[1]
-    # Remove the startPoint from our EPISODE - probably isn't needed
-    EPISODE = EPISODE.split("?startPoint=")[0]
-
-# Prefix a / if we haven't included it in our title otherwise we get an error
-if not EPISODE.startswith("/"):
-    EPISODE = "/" + EPISODE
-
 # Do we want to keep the downloaded files?
 if args['keep_files']:
     keep_files = True
-
-# Do we want to create an episode or series nfo file as well?
-if args['episode_nfo']:
-    create_episode_nfo = True
-if args['series_nfo']:
-    create_series_nfo = True
 
 # Do we want to download the subtitles?
 if args['subtitles']:
@@ -74,10 +56,10 @@ if args['subtitles']:
 
 # Set the start and end times
 if args['start_time']:
-    START_FROM = args['start_time']
+    START_FROM = wwe.time_to_seconds(args['start_time'])
 if args['end_time']:
-    END_TIME = args['end_time']
-
+    END_TIME = wwe.time_to_seconds(args['end_time'])
+    
 # Set whether it is a partial download or not
 try:
     if START_FROM:
@@ -117,11 +99,11 @@ if not video_link:
     exit()
 
 # Grab the m3u8
-stream_url = account.m3u8_stream(video_link[0])
+stream_url = account.m3u8_stream(video_link[1])
 
 # Set a custom file name if one was requested
 if not CUSTOM_FILENAME:
-    title = video_link[1]
+    title = video_link[0]
 else:
     title = CUSTOM_FILENAME
 
@@ -173,6 +155,7 @@ try:
     if START_FROM:
         kwargs.update({"start_from":START_FROM})
 except NameError:
+    START_FROM = 0
     kwargs.update({"start_from":0})
 
 # If we have an end_time then add the set end time, otherwise default to 0
@@ -180,6 +163,7 @@ try:
     if END_TIME:
         kwargs.update({"end_time":END_TIME})
 except NameError:
+    END_TIME = 0
     kwargs.update({"end_time":0})
 
 # Create a list where we will add our threads
@@ -221,31 +205,19 @@ download_threads.append(video_thread)
 # Wait for all threads to be finished
 for thread in download_threads:
     thread.join()
-
+exit()
 # Download the chapter information
-account.get_chapter_information(EPISODE, clean_text(title), args['chapter'])
-
-series_info = kodi_nfo.get_show_info(EPISODE)
+account.write_metadata(stream_url[2], clean_text(title), args['chapter'], START_FROM, END_TIME)
 
 # Create output folder if it doesn't exist
-if not os.path.exists(CONSTANTS.OUTPUT_FOLDER + "/" + clean_text(series_info[0])):
-    os.makedirs(CONSTANTS.OUTPUT_FOLDER + "/" + clean_text(series_info[0]))
-
-if(create_series_nfo):
-    print("Creating Kodi series NFO file")
-    kodi_nfo.create_show_nfo(series_info[1], clean_text(series_info[0]), series_info[2], series_info[3])
-    print("Created Kodi series NFO file")
-
-if(create_episode_nfo):
-    print("Creating Kodi episode NFO file")
-    kodi_nfo.create_episode_nfo(EPISODE, clean_text(series_info[0]), clean_text(title))
-    print("Created Kodi episode NFO file")
+if not os.path.exists(CONSTANTS.OUTPUT_FOLDER + "/" + clean_text(video_link[0])):
+    os.makedirs(CONSTANTS.OUTPUT_FOLDER + "/" + clean_text(video_link[0]))
 
 if(download_subtitles):
     account.download_subtitles(stream_url[1], clean_text(title))
 
 # Finally we want to combine our audio and video files
-download.combine_videos(clean_text(title), clean_text(series_info[0]), keep_files=keep_files, has_subtitles=download_subtitles)
+download.combine_videos(clean_text(title), clean_text(video_link[0]), keep_files=keep_files, has_subtitles=download_subtitles)
 
 # Insert the downloaded video into our database
 if db_q:

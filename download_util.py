@@ -85,8 +85,9 @@ class download:
     def download_playlist(self, playlist, base_url, title, **kwargs):
         # Check if the download directory exists
         self.create_dirs()
-        # Get the amount of files in the playlist
-        files_to_download = len(playlist.segments)
+        # How many files we will be downloading. We will add to this 
+        # when we get the total length
+        files_to_download = 0
         # set the title to our title and output file
         title = os.getcwd() + "/" + CONSTANTS.TEMP_FOLDER + "/" + title
 
@@ -101,9 +102,14 @@ class download:
         start_from = float(kwargs['start_from'])
         # Total length of segments we want to download in seconds
         total_length = float(0)
-        # Find the total length of a playlist
+        # Find the total length of a playlist.
+        # As long as we are shorter than our end time, keep adding the segment length
         for length in playlist.segments:
-            total_length += length.duration
+            if total_length < end_time:
+                files_to_download += 1
+                total_length += length.duration
+            else:
+                break
 
         try:
             # If we have already started to download a file and it still exists,

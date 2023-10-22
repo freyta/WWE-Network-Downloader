@@ -3,6 +3,7 @@ __pycache__/*
 .vscode
 output/*
 temp/*
+compiler/*
 *.aac
 *.ts
 *.mp4
