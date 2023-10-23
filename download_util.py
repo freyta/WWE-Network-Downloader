@@ -105,7 +105,7 @@ class download:
         # Find the total length of a playlist.
         # As long as we are shorter than our end time, keep adding the segment length
         for length in playlist.segments:
-            if total_length < end_time:
+            if total_length < end_time or end_time == 0:
                 files_to_download += 1
                 total_length += length.duration
             else:
