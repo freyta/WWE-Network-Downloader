@@ -92,8 +92,14 @@ class wwe_network:
             if i['format'] == "vtt":
                 subtitle_stream = i['url']
                 break
+                
+        # Some videos appear to not have chapters. Should fix https://github.com/freyta/WWE-Network-Downloader/issues/32
+        try:
+            chapters = stream['annotations']['titles']
+        except TypeError:
+            chapters = None
                     
-        return stream['hls'][0]['url'], subtitle_stream, stream['annotations']['titles']
+        return stream['hls'][0]['url'], subtitle_stream, chapters
 
 
     # Download the subtitles to the temp folder
