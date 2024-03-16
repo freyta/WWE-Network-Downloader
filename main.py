@@ -3,13 +3,18 @@
 import wwe
 import m3u8, os,re
 import argparse
-import download_util, kodi_nfo, CONSTANTS, db_util
+import download_util, CONSTANTS, db_util
 import time
 import threading
+from shutil import which
 
 def clean_text(text):
     # Thanks to https://stackoverflow.com/a/27647173
     return re.sub(r'[\\\\\\\'/*?:"<>|]',"",text)
+
+# If ffmpeg isn't found, quit.
+if which("ffmpeg") is None:
+    exit("Error: ffmpeg not found. Please add it to your PATH.")
 
 # GET ARGS FOR EPISODE TO DOWNLOAD
 parser = argparse.ArgumentParser(description='Download videos off the WWE Network.')
@@ -37,6 +42,8 @@ if args['title']:
     EPISODE = args['title']
     if "https://network.wwe.com/video/" in EPISODE:
         EPISODE = EPISODE.replace("https://network.wwe.com/video/", "")
+        # Get rid of the seasonId section of the URL
+        EPISODE = EPISODE.split("?")[0]
     else:
         print("Invalid link format. It should contain \"https://network.wwe.com/video/\"")
         exit()
