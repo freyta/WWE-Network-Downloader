@@ -92,8 +92,14 @@ class wwe_network:
             if i['format'] == "vtt":
                 subtitle_stream = i['url']
                 break
+                
+        # Some videos appear to not have chapters. Should fix https://github.com/freyta/WWE-Network-Downloader/issues/32
+        try:
+            chapters = stream['annotations']['titles']
+        except TypeError:
+            chapters = None
                     
-        return stream['hls'][0]['url'], subtitle_stream, stream['annotations']['titles']
+        return stream['hls'][0]['url'], subtitle_stream, chapters
 
 
     # Download the subtitles to the temp folder
@@ -133,12 +139,11 @@ title={episode_title}\n")
             chapters = re.findall(r'(\d{2}:\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}:\d{2}\.\d{3})\n(.*?)\n\n', chapter_data)
             
             # If we have set a custom end time
-            if end or start:
-                for i in chapters:
-                    timestamp = re.findall(r'(\d{2}:\d{2}:\d{2})', i[0])
-                    if (time_to_seconds(timestamp[1]) >= start and (end == 0 or time_to_seconds(timestamp[1]) <= end)):
-                        print(f"{i[1]}: {time_to_seconds(timestamp[0])} - {time_to_seconds(timestamp[1])}")
-                        meta_file.write(f"[CHAPTER]\nTIMEBASE=1/1000\nSTART={str(time_to_seconds(timestamp[0]) * 1000)}\nEND={str(time_to_seconds(timestamp[1]) * 1000)}\ntitle={i[1]}\n\n")
+            for i in chapters:
+                timestamp = re.findall(r'(\d{2}:\d{2}:\d{2})', i[0])
+                if (time_to_seconds(timestamp[1]) >= start and (end == 0 or time_to_seconds(timestamp[1]) <= end)):
+                    print(f"{i[1]}: {time_to_seconds(timestamp[0])} - {time_to_seconds(timestamp[1])}")
+                    meta_file.write(f"[CHAPTER]\nTIMEBASE=1/1000\nSTART={str(time_to_seconds(timestamp[0]) * 1000)}\nEND={str(time_to_seconds(timestamp[1]) * 1000)}\ntitle={i[1]}\n\n")
                         
             print("Finished writing chapter information")
 
