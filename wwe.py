@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import re
+import html
 import requests
 import CONSTANTS
 
@@ -138,15 +139,20 @@ title={episode_title}\n")
             
             chapters = re.findall(r'(\d{2}:\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}:\d{2}\.\d{3})\n(.*?)\n\n', chapter_data)
             
-            # If we have set a custom end time
-            for i in chapters:
+            # Write the chapter information.
+            # We loop through all the chapters, but only write the information which is between
+            # our start and stop time. 
+           for i in chapters:
                 timestamp = re.findall(r'(\d{2}:\d{2}:\d{2})', i[0])
-                if (time_to_seconds(timestamp[1]) >= start and (end == 0 or time_to_seconds(timestamp[1]) <= end)):
-                    print(f"{i[1]}: {time_to_seconds(timestamp[0])} - {time_to_seconds(timestamp[1])}")
-                    meta_file.write(f"[CHAPTER]\nTIMEBASE=1/1000\nSTART={str(time_to_seconds(timestamp[0]) * 1000)}\nEND={str(time_to_seconds(timestamp[1]) * 1000)}\ntitle={i[1]}\n\n")
-                        
-            print("Finished writing chapter information")
-
+                timestamp_start = timestamp[0]
+                timestamp_end   = timestamp[1]
+                
+                if (time_to_seconds(timestamp_end) >= start and (end == 0 or time_to_seconds(timestamp_end) <= end)):
+                    print(f"{html.unescape(i[1])}: {time_to_seconds(timestamp_start)} - {time_to_seconds(timestamp_end)}")
+                    meta_file.write(f"[CHAPTER]\nTIMEBASE=1/1000\nSTART={str(time_to_seconds(timestamp_start) * 1000)}\nEND={str(time_to_seconds(timestamp_end) * 1000)}\ntitle={html.unescape(i[1])}\n\n")
+            
+            print("Finished writing chapter information\n")
+        
         print("\nStarting to write the stream title")
         meta_file.write(f"[STREAM]\ntitle={episode_title}")
         print("Finished writing the stream title\n")
