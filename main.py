@@ -121,7 +121,7 @@ database = db_util.database()
 database.db_connect()
 
 # Check if we have already downloaded the video before.
-db_q = database.db_query(video_link[2], is_partial_download=partial_download)
+db_q = database.db_query(EPISODE, is_partial_download=partial_download)
 
 # If we haven't forced the download, then we will display an error and quit
 if not force_download and db_q:
@@ -228,8 +228,8 @@ download.combine_videos(clean_text(title), clean_text(video_link[0]), keep_files
 
 # Insert the downloaded video into our database
 if db_q:
-    database.db_upd(video_link[2], video_link[1], str(video_selections[0][0]), partial_download, int(time.time()))
+    database.db_upd(EPISODE, video_link[0], str(video_selections[0][0]), partial_download, int(time.time()))
     print("Updated database with the new video information")
 else:
-    database.db_ins(video_link[2], video_link[1], str(video_selections[0][0]), partial_download, int(time.time()))
+    database.db_ins(EPISODE, video_link[0], str(video_selections[0][0]), partial_download, int(time.time()))
     print("Inserted the video into the database")
