@@ -142,7 +142,7 @@ title={episode_title}\n")
             # Write the chapter information.
             # We loop through all the chapters, but only write the information which is between
             # our start and stop time. 
-           for i in chapters:
+            for i in chapters:
                 timestamp = re.findall(r'(\d{2}:\d{2}:\d{2})', i[0])
                 timestamp_start = timestamp[0]
                 timestamp_end   = timestamp[1]
